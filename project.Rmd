@@ -1,0 +1,94 @@
+---
+title: "Machine Learning Project"
+author: "Martin Rico"
+date: "2023-07-06"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1 step : Loading Data
+
+Loading data from the next links:
+
+For training : https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+For testing : https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+```{r}
+urlTraining <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+training<-read.csv(urlTraining)
+
+urlTesting <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+testing<-read.csv(urlTesting)
+```
+
+## 2 step: Selecting predictors variables
+
+Select variables reported by the accelerometer and the variables that bring information about the angles.
+Create a new dataset with that information, PredictorDataSet.
+
+```{r}
+accelerometer_var<-grep("\\_x$|\\_y$|\\_z$",names(training))
+angles_var<-grep("^roll|^pitch|^yaw",names(training))
+predictorDataSet<-data.frame(training[,accelerometer_var], training[,angles_var], training$classe)
+
+```
+
+Now, selecting variables for testing
+```{r}
+accelerometer_var_testing<-grep("\\_x$|\\_y$|\\_z$",names(testing))
+angles_var_testing<-grep("^roll|^pitch|^yaw",names(testing))
+testingDataSet<-data.frame(testing[,accelerometer_var], testing[,angles_var])
+
+```
+
+## 3 step: Fitting a model
+
+The problem could be handle as Classification problem, because the goal is identify if the records belong to A,B,C,D or E. 
+
+The Tree algorithm will be used to build the first model
+
+The Random Forest will be used to build the second model
+
+```{r}
+unique(predictorDataSet$training.classe)
+```
+
+The validation Cross technique to use is K-Fold with k value set to 10
+The trainControl function will be used to set the cross validation type
+The train function will be used to fit the model.
+
+Model build using Tree algorithm
+```{r}
+library(caret)
+set.seed(125)
+cvType<-trainControl(method = "cv", number = 10)
+model<-train(training.classe ~ ., data = predictorDataSet, method="rpart", trControl = cvType)
+print(model)
+```
+
+Model build with random forest algorithm
+```{r}
+modelRandomForest<-train(training.classe ~ ., data = predictorDataSet, method="rf", trControl = cvType)
+print(modelRandomForest)
+```
+
+## 4 step: predict using model
+
+Predict using the best model builded using Random Forest algorithm
+
+```{r}
+prediction<-predict(modelRandomForest,testingDataSet)
+print(prediction)
+```
+
+## Summary
+
+The best approach in order to identify if a exercise is do it correctly is using random forest because its accuracy is 0.995. It was determinate using cross validation on the original training data set.
+
+The trainControl function split the data using k=10 avoiding do this task manually.
